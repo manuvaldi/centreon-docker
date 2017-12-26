@@ -1,24 +1,38 @@
-FROM centos:centos6
-MAINTAINER jmathis <julien.mathis@gmail.com>
+FROM centos:centos7
+
+LABEL description "centreon-docker: monitoring systemcatch mail clone jmathis <julien.mathis@gmail.com>"
+MAINTAINER maintainer "VALMIR Chsitophe <christophe.valmir@idesi.fr>"
+
+#
+#  docker compilation
+#
+#  docker build -t  idesi/centreon .
+#  docker-compose up -d
+#
+#
 
 # Update CentOS
 RUN yum -y update
 
 # Install Centreon Repository
-RUN yum -y install http://yum.centreon.com/standard/3.0/stable/noarch/RPMS/ces-release-3.0-1.noarch.rpm
+RUN yum -y install http://yum.centreon.com/standard/3.4/el7/stable/noarch/RPMS/centreon-release-3.4-4.el7.centos.noarch.rpm
 
 # Install ssh
 RUN yum -y install openssh-server openssh-client
 RUN mkdir /var/run/sshd
 RUN echo 'root:centreon' | chpasswd
 RUN sed -i 's/^#PermitRootLogin/PermitRootLogin/g' /etc/ssh/sshd_config
-RUN /etc/init.d/sshd start && /etc/init.d/sshd stop
+#RUN /etc/init.d/sshd start && /etc/init.d/sshd stop
 
 # Install centreon
 RUN yum -y install MariaDB-server && /etc/init.d/mysql start && yum -y install centreon centreon-base-config-centreon-engine centreon-installed centreon-clapi && /etc/init.d/mysql stop
 
+# setting php
+RUN sed -i  's/;date.timezone =/date.timezone =UTC/' /etc/php.ini
+
 # Install Widgets
 RUN yum -y install centreon-widget-graph-monitoring centreon-widget-host-monitoring centreon-widget-service-monitoring centreon-widget-hostgroup-monitoring centreon-widget-servicegroup-monitoring
+
 # Fix pass in db
 ADD scripts/cbmod.sql /tmp/cbmod.sql
 RUN /etc/init.d/mysql start && sleep 5 && mysql centreon < /tmp/cbmod.sql && /usr/bin/centreon -u admin -p centreon -a POLLERGENERATE -v 1 && /usr/bin/centreon -u admin -p centreon -a CFGMOVE -v 1 && /etc/init.d/mysql stop
@@ -27,6 +41,7 @@ RUN /etc/init.d/mysql start && sleep 5 && mysql centreon < /tmp/cbmod.sql && /us
 RUN chown root:centreon-engine /usr/lib/nagios/plugins/check_icmp
 RUN chmod -w /usr/lib/nagios/plugins/check_icmp
 RUN chmod u+s /usr/lib/nagios/plugins/check_icmp
+
 
 # Install and configure supervisor
 RUN yum -y install python-setuptools
@@ -38,4 +53,8 @@ ADD scripts/supervisord.conf /etc/supervisord.conf
 # Expose port SSH and HTTP for the service
 EXPOSE 22 80
 
-CMD ['/usr/bin/supervisord', '--configuration=/etc/supervisord.conf']
+VOLUME ["/var/backup","/var/lib/mysql","/etc/centreon","/etc/centreon-engine","/etc/centreon-broker"]
+
+
+
+CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
