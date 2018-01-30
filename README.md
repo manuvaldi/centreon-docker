@@ -4,12 +4,10 @@ centreon-docker 3.4.
 INSTALL
 setting docker-files.yml
 
-docker build -t  idesi/centreon .
-docker-compose up -d
+docker build -t manuvaldi/centreon-docker .
 
+docker run --name centreon --restart always -p80:80  manuvaldi/centreon-docker
 
-
-This is a docker for Centreon. How to install a Centreon in 5 minutes ?
 
 login: admin
 password: centreon

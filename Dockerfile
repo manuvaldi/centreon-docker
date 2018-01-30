@@ -1,15 +1,7 @@
 FROM centos:centos7
 
 LABEL description "centreon-docker: monitoring systemcatch mail clone jmathis <julien.mathis@gmail.com>"
-MAINTAINER maintainer "VALMIR Chsitophe <christophe.valmir@idesi.fr>"
-
-#
-#  docker compilation
-#
-#  docker build -t  idesi/centreon .
-#  docker-compose up -d
-#
-#
+MAINTAINER maintainer "Manuel Valle <manuvaldi@gmail.com>"
 
 # Update CentOS
 RUN yum -y update
@@ -26,6 +18,9 @@ RUN sed -i 's/^#PermitRootLogin/PermitRootLogin/g' /etc/ssh/sshd_config
 
 # Install centreon
 RUN yum -y install MariaDB-server && /etc/init.d/mysql start && yum -y install centreon centreon-base-config-centreon-engine centreon-installed centreon-clapi && /etc/init.d/mysql stop
+
+# Install plugins
+RUN yum -y install nagios-plugins-tcp nagios-plugins-ssh nagios-plugins-fping
 
 # setting php
 RUN sed -i  's/;date.timezone =/date.timezone =UTC/' /etc/php.ini
