@@ -32,6 +32,9 @@ RUN yum -y install centreon-widget-graph-monitoring centreon-widget-host-monitor
 ADD scripts/cbmod.sql /tmp/cbmod.sql
 RUN /etc/init.d/mysql start && sleep 5 && mysql centreon < /tmp/cbmod.sql && /usr/bin/centreon -u admin -p centreon -a POLLERGENERATE -v 1 && /usr/bin/centreon -u admin -p centreon -a CFGMOVE -v 1 && /etc/init.d/mysql stop
 
+# Keep DB copy
+RUN tar czf /tmp/database-init.tar.gz -C /var/lib mysql
+
 # Set rights for setuid
 RUN chown root:centreon-engine /usr/lib/nagios/plugins/check_icmp
 RUN chmod -w /usr/lib/nagios/plugins/check_icmp
@@ -44,12 +47,13 @@ RUN easy_install supervisor
 
 # Todo better split file
 ADD scripts/supervisord.conf /etc/supervisord.conf
+ADD scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port SSH and HTTP for the service
 EXPOSE 22 80
 
 VOLUME ["/var/backup","/var/lib/mysql","/etc/centreon","/etc/centreon-engine","/etc/centreon-broker"]
 
-
-
-CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
+ENTRYPOINT ["/entrypoint.sh"]
+#CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisord.conf"]
