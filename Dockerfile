@@ -32,9 +32,6 @@ RUN yum -y install centreon-widget-graph-monitoring centreon-widget-host-monitor
 ADD scripts/cbmod.sql /tmp/cbmod.sql
 RUN /etc/init.d/mysql start && sleep 5 && mysql centreon < /tmp/cbmod.sql && /usr/bin/centreon -u admin -p centreon -a POLLERGENERATE -v 1 && /usr/bin/centreon -u admin -p centreon -a CFGMOVE -v 1 && /etc/init.d/mysql stop
 
-# Keep DB copy
-RUN tar czf /tmp/database-init.tar.gz -C /var/lib mysql
-
 # Set rights for setuid
 RUN chown root:centreon-engine /usr/lib/nagios/plugins/check_icmp
 RUN chmod -w /usr/lib/nagios/plugins/check_icmp
@@ -52,6 +49,11 @@ RUN chmod +x /entrypoint.sh
 
 # Expose port SSH and HTTP for the service
 EXPOSE 22 80
+
+RUN cp -Rp /var/lib/mysql /var/lib/mysql.original  \
+  && cp -Rp /etc/centreon /etc/centreon.original \
+  && cp -Rp /etc/centreon-engine /etc/centreon-engine.original \
+  && cp -Rp /etc/centreon-broker /etc/centreon-broker.original
 
 VOLUME ["/var/backup","/var/lib/mysql","/etc/centreon","/etc/centreon-engine","/etc/centreon-broker"]
 
